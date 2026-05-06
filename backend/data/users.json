@@ -1,0 +1,101 @@
+[
+  {
+    "id": "c34be5cb-da82-49c0-b50a-c33a75860e49",
+    "name": "admin",
+    "email": "admin@demo.com",
+    "role": "admin",
+    "age": 35,
+    "salary": 120000,
+    "salt": "88152ac3be95ceecc3e240f33612f3aa",
+    "passwordHash": "ded0ce62b67c474887968f5fb1e4b72f1b1fb842baf424c85a14840b80d91a0d78ab012113d10e7e6d78f70198deecefb7308c8087892b7d4e826c9e763c82f8",
+    "createdAt": "2026-05-06T05:25:09.170Z"
+  },
+  {
+    "id": "726a720e-b439-4342-819a-aa081e7441bc",
+    "name": "React Developer",
+    "email": "react@demo.com",
+    "role": "user",
+    "age": 29,
+    "salary": 82000,
+    "salt": "535db7f31f2cfd05ac47ebd96b784997",
+    "passwordHash": "5f7853084e2832efa7986eee3aebdb95036c2c1b9e5f7a030802e55248c5810a86871c97c374391bf56b2e086eee28ebc5761e2ac0f4057747f50e36dac6c668",
+    "createdAt": "2026-05-06T05:27:44.501Z"
+  },
+  {
+    "id": "5de4d6f8-04db-425f-ba18-42c5c3b7987e",
+    "name": "TestUser Updated",
+    "email": "test@demo.com",
+    "role": "user",
+    "age": 31,
+    "salary": 85000,
+    "salt": "cdeae2b145ebf6bea44e12e13610aea5",
+    "passwordHash": "92986079e714058b153bf4ea2f12863b2e1ad6f32513bf4fbb2300bcc3b984bdc8ae52d26127b7297c014cf43f35e02fbe4a1d99b4a4204e3fadb508896e4fd3",
+    "createdAt": "2026-05-06T05:45:35.043Z"
+  },
+  {
+    "id": "2352fe4e-e5a1-4998-ac4f-2959a4ad6914",
+    "name": "anotheruser",
+    "email": "another@demo.com",
+    "role": "user",
+    "age": 35,
+    "salary": 90000,
+    "salt": "ed1912188a7b6e585bb99977195c873d",
+    "passwordHash": "dd559ad6016ff3601df903f58efa655a7c651a6277f112fd760d253b3287fef4d64d8df7ba1fb79295a4afbd668d9b5c3c1e8270163062abf3faabfb5ca9131d",
+    "createdAt": "2026-05-06T05:46:01.449Z"
+  },
+  {
+    "id": "ddbaf1bf-d542-4c5c-b008-8448631ad3aa",
+    "name": "New Employee",
+    "email": "new.employee@demo.com",
+    "role": "user",
+    "age": 27,
+    "salary": 72000,
+    "salt": "70a4275c1ffa6ed17124db649510c6f0",
+    "passwordHash": "7b1cb3b14029514459cde8b0f47d109c23f5abb46e42204522d701847f939d558ef9411dd84026806f7e665f48a0030a91b1b1780a07933692ba227084b02e84",
+    "createdAt": "2026-05-06T06:10:05.723Z"
+  },
+  {
+    "id": "c3b75840-ac33-4fd8-9b9d-17bb87b936be",
+    "name": "tt",
+    "email": "tt@employee.local",
+    "role": "user",
+    "age": 44,
+    "salary": 324544545,
+    "salt": "7025e11c329498d258293e3326a47e24",
+    "passwordHash": "675939e8f6860b018a0976c2481c6dd2df1959e8e8585fa8dd9644abc96073256fa7b0e8b24b676b9c5359416a028a90ac3ec00b3f51c30b3d7e0a55258a1d80",
+    "createdAt": "2026-05-06T06:12:58.312Z"
+  },
+  {
+    "id": "7b54b9b0-79cd-4cfa-8aeb-b6258802bba8",
+    "name": "uuuu",
+    "email": "yash@employee.local",
+    "role": "user",
+    "age": 33,
+    "salary": 6777889798,
+    "salt": "333780b75044490758c16a480b23c6c6",
+    "passwordHash": "174a4bfb9646bad6e48a79b80279ef905fd8848a3865dbd1fc4422f29ec52b4c547a621950a50c47bd6b9894bd7798f47a86faf05c60b380446129d9467b9169",
+    "createdAt": "2026-05-06T06:22:38.078Z"
+  },
+  {
+    "id": "50b31875-21ca-4a4f-9ea6-ff7b5a67299b",
+    "name": "user",
+    "email": "user@demo.com",
+    "role": "user",
+    "age": null,
+    "salary": null,
+    "salt": "daae1cbd2dfbe740825eb9f35d31e1fd",
+    "passwordHash": "a593f9462af7dd6e3e7ea98577751c989d20107f782e07b9e3d5425087e283e3c2690529773fbac011b758628f643c0c785101ce69afac1e2abad40a844b4511",
+    "createdAt": "2026-05-06T06:31:33.306Z"
+  },
+  {
+    "id": "0fb86c25-9ab6-46d5-9410-e8f1b195bbf9",
+    "name": "v",
+    "email": "v@employee.local",
+    "role": "user",
+    "age": null,
+    "salary": null,
+    "salt": "bc8d1d399da9d078e60906828b2efdc0",
+    "passwordHash": "197b72ec2a5a99bbf7223893f0c94d97cbe73abe7b90663dd183c0f64436db17c0f6868e83f86ca7637972a0d252231a9558210c4989de6154f0eda63fc1d577",
+    "createdAt": "2026-05-06T06:41:00.229Z"
+  }
+]

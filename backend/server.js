@@ -1,12 +1,35 @@
 const crypto = require("crypto")
 const express = require("express")
-const fs = require("fs/promises")
-const path = require("path")
+const { MongoClient, ObjectId } = require("mongodb")
 
 const app = express()
 const port = process.env.PORT || 3000
-const dataDir = path.join(__dirname, "data")
-const usersFile = path.join(dataDir, "users.json")
+
+// MongoDB configuration
+const mongoUrl = process.env.MONGODB_URL || "mongodb://localhost:27017"
+const dbName = "login_db"
+const collectionName = "users"
+
+let db = null
+let usersCollection = null
+
+// Connect to MongoDB
+async function connectToDatabase() {
+	try {
+		const client = new MongoClient(mongoUrl)
+		await client.connect()
+		console.log("Connected to MongoDB")
+		db = client.db(dbName)
+		usersCollection = db.collection(collectionName)
+		
+		// Create index on email field for faster lookups
+		await usersCollection.createIndex({ email: 1 }, { unique: true })
+		await usersCollection.createIndex({ id: 1 })
+	} catch (error) {
+		console.error("Failed to connect to MongoDB:", error)
+		process.exit(1)
+	}
+}
 
 app.use(express.json())
 
@@ -22,35 +45,49 @@ app.use((req, res, next) => {
 	next()
 })
 
-async function ensureDatabase() {
-	try {
-		await fs.access(usersFile)
-	} catch {
-		await fs.mkdir(dataDir, { recursive: true })
-		await fs.writeFile(usersFile, "[]\n", "utf8")
-	}
-}
-
 async function readUsers() {
-	await ensureDatabase()
-
-	const content = await fs.readFile(usersFile, "utf8")
-
-	if (!content.trim()) {
-		return []
-	}
-
 	try {
-		const users = JSON.parse(content)
-		return Array.isArray(users) ? users : []
-	} catch {
+		const users = await usersCollection.find({}).toArray()
+		return users.map((user) => ({
+			...user,
+			_id: undefined, // Remove MongoDB's _id field from response
+		}))
+	} catch (error) {
+		console.error("Error reading users:", error)
 		return []
 	}
 }
 
-async function writeUsers(users) {
-	await fs.mkdir(dataDir, { recursive: true })
-	await fs.writeFile(usersFile, `${JSON.stringify(users, null, 2)}\n`, "utf8")
+async function addUser(user) {
+	try {
+		await usersCollection.insertOne(user)
+	} catch (error) {
+		if (error.code === 11000) {
+			// Duplicate key error (email already exists)
+			throw new Error("Email already exists")
+		}
+		throw error
+	}
+}
+
+async function updateUser(userId, updates) {
+	try {
+		const result = await usersCollection.updateOne({ id: userId }, { $set: updates })
+		return result.modifiedCount > 0
+	} catch (error) {
+		console.error("Error updating user:", error)
+		throw error
+	}
+}
+
+async function deleteUser(userId) {
+	try {
+		const result = await usersCollection.deleteOne({ id: userId })
+		return result.deletedCount > 0
+	} catch (error) {
+		console.error("Error deleting user:", error)
+		throw error
+	}
 }
 
 function normalizeEmail(email) {
@@ -103,8 +140,7 @@ app.post("/api/auth/signup", async (req, res) => {
 			return res.status(400).json({ message: "Password must be at least 6 characters." })
 		}
 
-		const users = await readUsers()
-		const existingUser = users.find((user) => user.email === email)
+		const existingUser = await usersCollection.findOne({ email })
 
 		if (existingUser) {
 			return res.status(409).json({ message: "An account with this email already exists." })
@@ -123,14 +159,17 @@ app.post("/api/auth/signup", async (req, res) => {
 			createdAt: new Date().toISOString(),
 		}
 
-		users.push(user)
-		await writeUsers(users)
+		await addUser(user)
 
 		return res.status(201).json({
 			message: "Account created successfully.",
 			user: sanitizeUser(user),
 		})
 	} catch (error) {
+		console.error("Signup error:", error)
+		if (error.message === "Email already exists") {
+			return res.status(409).json({ message: "An account with this email already exists." })
+		}
 		return res.status(500).json({ message: "Could not create account right now." })
 	}
 })
@@ -148,8 +187,7 @@ app.post("/api/auth/login", async (req, res) => {
 			return res.status(400).json({ message: "Password is required." })
 		}
 
-		const users = await readUsers()
-		const user = users.find((entry) => entry.email === email)
+		const user = await usersCollection.findOne({ email })
 
 		if (!user) {
 			return res.status(401).json({ message: "Invalid email or password." })
@@ -166,6 +204,7 @@ app.post("/api/auth/login", async (req, res) => {
 			user: sanitizeUser(user),
 		})
 	} catch (error) {
+		console.error("Login error:", error)
 		return res.status(500).json({ message: "Could not log in right now." })
 	}
 })
@@ -173,8 +212,7 @@ app.post("/api/auth/login", async (req, res) => {
 app.get("/api/profile/:userId", async (req, res) => {
 	try {
 		const { userId } = req.params
-		const users = await readUsers()
-		const user = users.find((u) => u.id === userId)
+		const user = await usersCollection.findOne({ id: userId })
 
 		if (!user) {
 			return res.status(404).json({ message: "User not found." })
@@ -182,6 +220,7 @@ app.get("/api/profile/:userId", async (req, res) => {
 
 		return res.json({ user: sanitizeUser(user) })
 	} catch (error) {
+		console.error("Get profile error:", error)
 		return res.status(500).json({ message: "Could not fetch profile." })
 	}
 })
@@ -202,10 +241,9 @@ app.put("/api/profile/:userId", async (req, res) => {
 			return res.status(403).json({ message: "You can only update your own profile." })
 		}
 
-		const users = await readUsers()
-		const userIndex = users.findIndex((u) => u.id === userId)
+		const user = await usersCollection.findOne({ id: userId })
 
-		if (userIndex === -1) {
+		if (!user) {
 			return res.status(404).json({ message: "User not found." })
 		}
 
@@ -226,18 +264,23 @@ app.put("/api/profile/:userId", async (req, res) => {
 			return res.status(400).json({ message: "Salary must be a valid positive number." })
 		}
 
-		// Update user
-		if (name !== undefined) users[userIndex].name = String(name).trim()
-		if (age !== undefined) users[userIndex].age = age
-		if (salary !== undefined) users[userIndex].salary = salary
+		// Prepare updates
+		const updates = {}
+		if (name !== undefined) updates.name = String(name).trim()
+		if (age !== undefined) updates.age = age
+		if (salary !== undefined) updates.salary = salary
 
-		await writeUsers(users)
+		await updateUser(userId, updates)
+
+		// Fetch updated user
+		const updatedUser = await usersCollection.findOne({ id: userId })
 
 		return res.json({
 			message: "Profile updated successfully.",
-			user: sanitizeUser(users[userIndex]),
+			user: sanitizeUser(updatedUser),
 		})
 	} catch (error) {
+		console.error("Update profile error:", error)
 		return res.status(500).json({ message: "Could not update profile." })
 	}
 })
@@ -265,14 +308,13 @@ app.post("/api/employees", async (req, res) => {
 			return res.status(400).json({ message: "Salary must be a valid positive number." })
 		}
 
-		const users = await readUsers()
 		const baseEmail = `${name
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, ".")
 			.replace(/^\.+|\.+$/g, "") || "employee"}`
 		let email = `${baseEmail}@employee.local`
 		let sequence = 1
-		while (users.some((user) => user.email === email)) {
+		while (await usersCollection.findOne({ email })) {
 			email = `${baseEmail}.${sequence}@employee.local`
 			sequence += 1
 		}
@@ -292,26 +334,26 @@ app.post("/api/employees", async (req, res) => {
 			createdAt: new Date().toISOString(),
 		}
 
-		users.push(user)
-		await writeUsers(users)
+		await addUser(user)
 
 		return res.status(201).json({
 			message: "Employee created successfully.",
 			user: sanitizeUser(user),
 		})
 	} catch (error) {
+		console.error("Create employee error:", error)
 		return res.status(500).json({ message: "Could not create employee right now." })
 	}
 })
 
 app.get("/api/employees", async (req, res) => {
-  try {
-    const users = await readUsers()
-    const employees = users.filter((user) => user.role !== "admin").map(sanitizeUser)
-    return res.json({ employees })
-  } catch (error) {
-    return res.status(500).json({ message: "Could not fetch employees." })
-  }
+	try {
+		const employees = await usersCollection.find({ role: { $ne: "admin" } }).toArray()
+		return res.json({ employees: employees.map(sanitizeUser) })
+	} catch (error) {
+		console.error("Get employees error:", error)
+		return res.status(500).json({ message: "Could not fetch employees." })
+	}
 })
 
 app.delete("/api/employees/:userId", async (req, res) => {
@@ -324,28 +366,39 @@ app.delete("/api/employees/:userId", async (req, res) => {
 			return res.status(403).json({ message: "Only admin can delete employees." })
 		}
 
-		const users = await readUsers()
-		const userIndex = users.findIndex((user) => user.id === userId)
+		const user = await usersCollection.findOne({ id: userId })
 
-		if (userIndex === -1) {
+		if (!user) {
 			return res.status(404).json({ message: "User not found." })
 		}
 
-		if (users[userIndex].role === "admin") {
+		if (user.role === "admin") {
 			return res.status(403).json({ message: "Admin users cannot be deleted." })
 		}
 
-		const deletedUser = users.splice(userIndex, 1)[0]
-		await writeUsers(users)
+		await deleteUser(userId)
 
 		return res.json({
 			message: "Employee deleted successfully.",
-			user: sanitizeUser(deletedUser),
+			user: sanitizeUser(user),
 		})
 	} catch (error) {
+		console.error("Delete employee error:", error)
 		return res.status(500).json({ message: "Could not delete employee right now." })
 	}
 })
-app.listen(port, () => {
-	console.log(`app listening on port ${port}`)
-})
+
+// Start server
+async function startServer() {
+	try {
+		await connectToDatabase()
+		app.listen(port, () => {
+			console.log(`app listening on port ${port}`)
+		})
+	} catch (error) {
+		console.error("Failed to start server:", error)
+		process.exit(1)
+	}
+}
+
+startServer()

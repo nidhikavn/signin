@@ -97,5 +97,38 @@
     "salt": "bc8d1d399da9d078e60906828b2efdc0",
     "passwordHash": "197b72ec2a5a99bbf7223893f0c94d97cbe73abe7b90663dd183c0f64436db17c0f6868e83f86ca7637972a0d252231a9558210c4989de6154f0eda63fc1d577",
     "createdAt": "2026-05-06T06:41:00.229Z"
+  },
+  {
+    "id": "0f37e615-4d0d-442d-915c-5b07acf9faae",
+    "name": "js",
+    "email": "js@demo.com",
+    "role": "user",
+    "age": null,
+    "salary": null,
+    "salt": "3afbf8ce27111a0bc7bda2b33bebe771",
+    "passwordHash": "9f9b95f43d8e60dc7eb7c9cc8b6b0b6e82d04a0a0e1059f156d58d3eab319973d5c74af12d19bf7ac377469aba7620c0c7c4c01fbc972fc7fb488841ab1d6d88",
+    "createdAt": "2026-05-06T10:25:39.346Z"
+  },
+  {
+    "id": "bcebc47a-dd13-40a3-a3f7-c44dcce4cac1",
+    "name": "ts",
+    "email": "ts@demo.com",
+    "role": "user",
+    "age": null,
+    "salary": null,
+    "salt": "0f1084968b0fab5f40f1ded6a0ba914c",
+    "passwordHash": "301580246492a45667136281e0b2980ecb81b5ac687643d8fad74e8809df1ad248b698b97830409ce57bdb21edebcba6c046633e3a6a3c681ed669c5b07f0d81",
+    "createdAt": "2026-05-06T10:27:28.176Z"
+  },
+  {
+    "id": "7d3d8ef9-3df2-4e71-941c-82275059b2ee",
+    "name": "Mongo Test User",
+    "email": "mongotest+1@demo.com",
+    "role": "user",
+    "age": null,
+    "salary": null,
+    "salt": "58063ff10556e44623a09bea654ee90a",
+    "passwordHash": "35032014090c9934399d33e07a4d09d656fc5502385eeae505829337db59d7d820bee625a885720ae205fd02bdc6e79b8b9703e87de463f873df2a0d25301395",
+    "createdAt": "2026-05-06T10:44:52.747Z"
   }
 ]

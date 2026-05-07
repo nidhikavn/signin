@@ -9,6 +9,7 @@ type User = {
   role: string
   age: number | null
   salary: number | null
+  position?: string | null
   createdAt: string
 }
 
@@ -16,6 +17,9 @@ type ApiResponse = {
   message?: string
   user?: User
   employees?: User[]
+  employee?: User
+  admin?: { id: string; name: string; email: string }
+  temporaryPassword?: string
 }
 
 const LOGIN_ROUTE = "/login"
@@ -29,6 +33,7 @@ export function App() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
+  const [signupRole, setSignupRole] = useState<"user" | "admin">("user")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
@@ -39,8 +44,10 @@ export function App() {
   const [isSaving, setIsSaving] = useState(false)
   const [editError, setEditError] = useState("")
   const [showAddEmployee, setShowAddEmployee] = useState(false)
-  const [newEmployee, setNewEmployee] = useState<{ name: string; age: string; salary: string }>({
+  const [newEmployee, setNewEmployee] = useState<{ name: string; email: string; position: string; age: string; salary: string }>({
     name: "",
+    email: "",
+    position: "",
     age: "",
     salary: "",
   })
@@ -127,7 +134,8 @@ export function App() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch("/api/auth/signup", {
+      const endpoint = signupRole === "admin" ? "/api/admins" : "/api/auth/signup"
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
@@ -138,10 +146,11 @@ export function App() {
         throw new Error(data.message || "Signup failed.")
       }
 
-      setMessage("Account created successfully. Please login.")
+      setMessage(signupRole === "admin" ? "Admin account created. Please login." : "Account created successfully. Please login.")
       setName("")
       setEmail("")
       setPassword("")
+      setSignupRole("user")
       navigateTo(LOGIN_ROUTE)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Signup failed.")
@@ -155,7 +164,7 @@ export function App() {
     setEditError("")
 
     try {
-      const response = await fetch(`/api/profile/${employeeId}`, {
+      const response = await fetch(`/api/employees/${employeeId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -168,11 +177,11 @@ export function App() {
       })
 
       const data = (await response.json()) as ApiResponse
-      if (!response.ok) {
+      if (!response.ok || !data.employee) {
         throw new Error(data.message || "Update failed.")
       }
 
-      setEmployees(employees.map((emp) => (emp.id === employeeId ? data.user! : emp)))
+      setEmployees(employees.map((emp) => (emp.id === employeeId ? (data.employee as User) : emp)))
       setEditingId(null)
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Update failed.")
@@ -187,11 +196,13 @@ export function App() {
     setIsAddingEmployee(true)
 
     try {
-      const response = await fetch("/api/employees", {
+      const response = await fetch("/api/createemployee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newEmployee.name,
+          email: newEmployee.email,
+          position: newEmployee.position,
           age: newEmployee.age ? Number(newEmployee.age) : null,
           salary: newEmployee.salary ? Number(newEmployee.salary) : null,
           currentUserId: currentUser?.id,
@@ -200,12 +211,13 @@ export function App() {
       })
 
       const data = (await response.json()) as ApiResponse
-      if (!response.ok || !data.user) {
+      if (!response.ok || !data.employee) {
         throw new Error(data.message || "Could not add employee.")
       }
 
-      setEmployees((prev) => [...prev, data.user as User])
-      setNewEmployee({ name: "", age: "", salary: "" })
+      setEmployees((prev) => [...prev, data.employee as User])
+      setMessage(`Employee created! Temporary password: ${data.temporaryPassword}. Share this with the employee.`)
+      setNewEmployee({ name: "", email: "", position: "", age: "", salary: "" })
       setShowAddEmployee(false)
     } catch (error) {
       setAddEmployeeError(error instanceof Error ? error.message : "Could not add employee.")
@@ -278,6 +290,11 @@ export function App() {
             <div>
               <h1 className="text-4xl font-semibold tracking-tight text-white">Employees</h1>
               <p className="mt-2 text-slate-400">Welcome, <span className="font-semibold text-cyan-400">{currentUser.name}</span> ({currentUser.role})</p>
+              {currentUser.role !== "admin" && (
+                <p className="mt-2 text-sm text-amber-300">
+                  Add Employee is available only for admin accounts. Log in with an admin account to see it.
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3">
               {currentUser.role === "admin" && (
@@ -309,6 +326,21 @@ export function App() {
                   value={newEmployee.name}
                   onChange={(e) => setNewEmployee((prev) => ({ ...prev, name: e.target.value }))}
                   required
+                />
+                <input
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+                  type="email"
+                  placeholder="Employee email"
+                  value={newEmployee.email}
+                  onChange={(e) => setNewEmployee((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+                <input
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+                  type="text"
+                  placeholder="Position"
+                  value={newEmployee.position}
+                  onChange={(e) => setNewEmployee((prev) => ({ ...prev, position: e.target.value }))}
                 />
                 <input
                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 outline-none placeholder:text-slate-500 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
@@ -357,6 +389,8 @@ export function App() {
                   <thead>
                     <tr className="border-b border-white/10 bg-white/5">
                       <th className="px-6 py-4 text-left text-sm font-semibold text-slate-200">Name</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-200">Email</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-slate-200">Position</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-slate-200">Age</th>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-slate-200">Salary</th>
                       {currentUser.role === "admin" && (
@@ -378,6 +412,12 @@ export function App() {
                           ) : (
                             <span className="font-medium text-white">{emp.name}</span>
                           )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-slate-300">{emp.email || "—"}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-slate-300">{emp.position || "—"}</span>
                         </td>
                         <td className="px-6 py-4">
                           {editingId === emp.id && currentUser.role === "admin" ? (
@@ -481,6 +521,18 @@ export function App() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Account Type</span>
+              <select
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 outline-none transition focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+                value={signupRole}
+                onChange={(e) => setSignupRole(e.target.value as "user" | "admin")}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
             </label>
 
             {error && (

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^5.2.1",
+    "joi": "^18.2.1",
     "mongodb": "^6.3.0",
     "mongoose": "^9.6.1"
   }

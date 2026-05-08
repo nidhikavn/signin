@@ -196,7 +196,8 @@ export function App() {
     setIsAddingEmployee(true)
 
     try {
-      const response = await fetch("/api/createemployee", {
+      // Admin-only: create employee record in employees collection only
+      const response = await fetch("/api/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -216,7 +217,7 @@ export function App() {
       }
 
       setEmployees((prev) => [...prev, data.employee as User])
-      setMessage(`Employee created! Temporary password: ${data.temporaryPassword}. Share this with the employee.`)
+      setMessage("Employee created.")
       setNewEmployee({ name: "", email: "", position: "", age: "", salary: "" })
       setShowAddEmployee(false)
     } catch (error) {
@@ -292,7 +293,7 @@ export function App() {
               <p className="mt-2 text-slate-400">Welcome, <span className="font-semibold text-cyan-400">{currentUser.name}</span> ({currentUser.role})</p>
               {currentUser.role !== "admin" && (
                 <p className="mt-2 text-sm text-amber-300">
-                  Add Employee is available only for admin accounts. Log in with an admin account to see it.
+     
                 </p>
               )}
             </div>
